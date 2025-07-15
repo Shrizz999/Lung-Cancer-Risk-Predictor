@@ -54,8 +54,8 @@ def generate_pdf(full_name, df, prediction, proba):
     pdf.set_font("Arial", 'B', 12)
     pdf.set_fill_color(220, 53, 69) if prediction == 1 else pdf.set_fill_color(40, 167, 69)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, f"Prediction: {result}", ln=True, fill=True)
-    pdf.cell(0, 10, f"Prediction Confidence: {proba * 100:.2f}%", ln=True, fill=True)
+    pdf.cell(0, 10, f"Risk Probability: {result}", ln=True, fill=True)
+    pdf.cell(0, 10, f"Risk Probability: {proba * 100:.2f}%", ln=True, fill=True)
     pdf.set_text_color(0, 0, 0)
 
     path = "Lung-Cancer_Prediction_Report.pdf"
@@ -202,12 +202,12 @@ if st.button("🔍 Predict"):
     )
 
     
-    st.metric("📊 Confidence", f"{proba * 100:.2f}%")
+
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=proba * 100,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': "Prediction Confidence"},
+        title={'text': "Risk Probability"},
         gauge={
             'axis': {'range': [0, 100]},
             'bar': {'color': bar_color},
@@ -281,4 +281,3 @@ if st.button("Submit Feedback"):
 
 st.markdown("---")
 st.caption("🔒 Data is not stored. All predictions are local and for demo use only.")
-
