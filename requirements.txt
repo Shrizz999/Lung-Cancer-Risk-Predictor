@@ -2,4 +2,4 @@ streamlit
 pandas
 joblib
 fpdf
-base64
+plotly
