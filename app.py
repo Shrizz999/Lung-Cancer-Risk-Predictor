@@ -63,7 +63,7 @@ def generate_pdf(full_name, df_display, prediction, proba):
     return path
 
 
-# Streamlit UI
+
 st.set_page_config(page_title="Lung Cancer Risk Prediction", layout="centered", initial_sidebar_state="expanded")
 
 st.sidebar.title("🔍 About")
@@ -77,7 +77,7 @@ st.title("Lung Cancer Risk Prediction")
 full_name = st.text_input("Enter your full name:")
 
 AGE = st.slider('Age', 1, 100, 25, help="Select your current age.")
-GENDER_M = st.selectbox('Gender', ('MALE', 'FEMALE'), help="Select your biological gender.")
+GENDER = st.selectbox('Gender', ('MALE', 'FEMALE'), help="Select your biological gender.")
 SMOKING = st.selectbox('Do you smoke?', ('YES', 'NO'), help="Smoking is a major risk factor for lung diseases.")
 YELLOW_FINGERS = st.selectbox('Yellow fingers?', ('YES', 'NO'), help="Yellowing may indicate long-term tobacco use.")
 ANXIETY = st.selectbox('Anxiety?', ('YES', 'NO'), help="Mental health can indirectly impact physical health.")
@@ -91,31 +91,41 @@ SHORTNESS_OF_BREATH = st.selectbox('Shortness of breath?', ('YES', 'NO'), help="
 SWALLOWING_DIFFICULTY = st.selectbox('Swallowing difficulty?', ('YES', 'NO'), help="Pain or discomfort when swallowing.")
 CHEST_PAIN = st.selectbox('Chest pain?', ('YES', 'NO'), help="Any sharp, dull, or persistent pain in the chest area.")
 
-
 consent = st.checkbox("I agree to the disclaimer and understand this is not a medical diagnosis.")
 if not consent:
     st.warning("You must agree to the disclaimer to proceed.")
     st.stop()
 
 if st.button("🔍 Predict"):
-    input_data = [[AGE, GENDER_M, SMOKING, YELLOW_FINGERS, ANXIETY,
-                   CHRONIC_DISEASE, FATIGUE, ALLERGY, WHEEZING, ALCOHOL_CONSUMING,
-                   COUGHING, SHORTNESS_OF_BREATH, SWALLOWING_DIFFICULTY, CHEST_PAIN]]
+    GENDER_M_VAL = 1 if GENDER == 'MALE' else 0
+
+    display_input_data = [[AGE, GENDER, SMOKING, YELLOW_FINGERS, ANXIETY,
+                           CHRONIC_DISEASE, FATIGUE, ALLERGY, WHEEZING, ALCOHOL_CONSUMING,
+                           COUGHING, SHORTNESS_OF_BREATH, SWALLOWING_DIFFICULTY, CHEST_PAIN]]
+
+    df_display = pd.DataFrame(display_input_data, columns=[
+        "AGE", "GENDER", "SMOKING", "YELLOW_FINGERS", "ANXIETY",
+        "CHRONIC_DISEASE", "FATIGUE", "ALLERGY", "WHEEZING", "ALCOHOL_CONSUMING",
+        "COUGHING", "SHORTNESS_OF_BREATH", "SWALLOWING_DIFFICULTY", "CHEST_PAIN"
+    ])
+
+    df_model = df_display.copy()
+    df_model['GENDER_M'] = GENDER_M_VAL
+    df_model.drop(columns=["GENDER"], inplace=True)
+
     
-    # Create human-readable display DataFrame
-    df_display = pd.DataFrame(input_data, columns=expected_columns)
+    for col in df_model.columns:
+        if df_model[col].dtype == 'object':
+            df_model[col] = df_model[col].map({'YES': 1, 'NO': 0})
 
-    # Create model-ready DataFrame
-    df = df_display.copy()
-    for col in expected_columns:
-        if df[col].dtype == 'object':
-            df[col] = df[col].map({'YES': 1, 'NO': 0, 'MALE': 1, 'FEMALE': 0})
+    
+    df_model = df_model[expected_columns]
 
-    prediction = model.predict(df)[0]
-    proba = float(model.predict_proba(df)[0][1])
+    prediction = model.predict(df_model)[0]
+    proba = float(model.predict_proba(df_model)[0][1])
     result_label = "High Risk" if prediction else "Low Risk"
 
-    # Display Result Banner
+    
     icon = "🧠" if prediction == 0 else "⚠️"
     bar_color = "#28a745" if prediction == 0 else "#dc3545"
     st.markdown(
@@ -136,7 +146,7 @@ if st.button("🔍 Predict"):
         unsafe_allow_html=True
     )
 
-    # Gauge Chart
+    
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=proba * 100,
@@ -153,10 +163,10 @@ if st.button("🔍 Predict"):
     ))
     st.plotly_chart(fig, use_container_width=True)
 
-    # Generate PDF from display data
+    
     pdf_path = generate_pdf(full_name, df_display, prediction, proba)
 
-    # PDF Download Button
+    
     with open(pdf_path, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
         custom_button = f"""
@@ -183,13 +193,13 @@ if st.button("🔍 Predict"):
         """
     st.markdown(custom_button, unsafe_allow_html=True)
 
-    # Save to session state
+    
     if "past_predictions" not in st.session_state:
         st.session_state.past_predictions = []
 
     st.session_state.past_predictions.append((full_name, df_display, result_label, proba))
 
-# Display Past Predictions
+
 if "past_predictions" in st.session_state:
     st.markdown("### 📁 Past Predictions")
     for i, (name, df_prev, label, prob) in enumerate(reversed(st.session_state.past_predictions[-5:])):
@@ -201,7 +211,7 @@ if "past_predictions" in st.session_state:
                 unsafe_allow_html=True)
             st.markdown(f"**Confidence:** {prob * 100:.2f}%")
 
-# Feedback Section
+
 st.markdown("---")
 st.subheader("💬 Feedback")
 feedback = st.text_area("Help us improve. What did you like or what can be better?")
